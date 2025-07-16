@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html lang="es">
+<html lang="en">
 
 <head>
   <meta charset="UTF-8">
@@ -130,32 +130,32 @@
         flex-direction: column;
       }
     }
-       input[type="file"] {
-            width: calc(100% - 22px);
-            padding: 10px;
-            margin: 20px auto;
-            border: 2px solid #091f2d;
-            border-radius: 10px;
-            box-sizing: border-box;
-            display: block;
-            font-size: 16px;
-            color: #091f2d;
-            background-color: #f9f9f9;
-            cursor: pointer;
-        }
+
+    input[type="file"] {
+      width: calc(100% - 22px);
+      padding: 10px;
+      margin: 20px auto;
+      border: 2px solid #091f2d;
+      border-radius: 10px;
+      display: block;
+      font-size: 16px;
+      color: #091f2d;
+      background-color: #f9f9f9;
+      cursor: pointer;
+    }
 
     input[type="file"]::file-selector-button {
-            background: #091f2d;
-            border: none;
-            color: white;
-            padding: 10px 20px;
-            border-radius: 5px;
-            cursor: pointer;
-            font-size: 16px;
+      background: #091f2d;
+      border: none;
+      color: white;
+      padding: 10px 20px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-size: 16px;
     }
 
     input[type="file"]::file-selector-button:hover {
-            background: #091f2d;
+      background: #091f2d;
     }
   </style>
 </head>
@@ -203,7 +203,7 @@
       const baseUrl = document.getElementById("endpoint").value;
 
       if (!fileInput.files.length || !apiKey) {
-        alert("Please select an excel file and the X-API-KEY");
+        alert("Please select an Excel file and provide the X-API-KEY.");
         return;
       }
 
@@ -222,57 +222,49 @@
           const url = `${baseUrl}${entityId}`;
 
           const payload = {
-            gwClientId: row['gwClientId'],
             providers: [
               {
                 provider: row['provider'],
                 accountId: row['accountId'],
                 authentication: {
                   clientId: row['clientId'],
-                  clientSecret: row['clientSecret'],
-                  apiKey: row['apiKey']
+                  clientSecret: row['clientSecret']
                 }
               }
             ]
           };
 
-          const headers = {
-            'Content-Type': 'application/json',
-            'X-API-KEY': apiKey
-          };
-
           let status = 'failed', code = '', reason = '';
 
-        try {
-          const response = await fetch('/.netlify/functions/proxy', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({
-              url,
-              method: 'PUT',
-              headers: {
-                'Content-Type': 'application/json',
-                'X-API-KEY': apiKey
-              },
-              body: payload
-            })
-          });
+          try {
+            const response = await fetch('/.netlify/functions/proxy', {
+              method: 'POST',
+              headers: { 'Content-Type': 'application/json' },
+              body: JSON.stringify({
+                url,
+                method: 'PUT',
+                headers: {
+                  'Content-Type': 'application/json',
+                  'X-API-KEY': apiKey
+                },
+                body: payload
+              })
+            });
 
-          const json = await response.json(); // ✅ Corrección aquí
+            const json = await response.json();
 
-          status = json?.result?.status || 'error';
-          code = json?.result?.errors?.code || '';
-          reason = json?.result?.errors?.reason || '';
+            status = json?.result?.status || 'error';
+            code = json?.result?.errors?.code || '';
+            reason = json?.result?.errors?.reason || '';
 
-          log(`[${status}] gwClientId: ${row['gwClientId']}, clientId: ${row['clientId']}, reason: ${reason || '-'}`);
-        } catch (err) {
-          reason = err.message;
-          log(`[ERROR] gwClientId: ${row['gwClientId']} → ${reason}`);
-        }
+            log(`[${status}] entity-id: ${entityId}, reason: ${reason || '-'}`);
+          } catch (err) {
+            reason = err.message;
+            log(`[ERROR] entity-id: ${entityId} → ${reason}`);
+          }
 
           output.push({
-            gwClientId: row['gwClientId'],
-            clientId: row['clientId'],
+            entityId,
             status,
             code,
             reason
