@@ -203,7 +203,7 @@
       const baseUrl = document.getElementById("endpoint").value;
 
       if (!fileInput.files.length || !apiKey) {
-        alert("Por favor selecciona un archivo y proporciona la X-API-KEY");
+        alert("Please select an excel file and the X-API-KEY");
         return;
       }
 
@@ -243,23 +243,32 @@
 
           let status = 'failed', code = '', reason = '';
 
-          try {
-            const res = await fetch(url, {
+        try {
+          const response = await fetch('/.netlify/functions/proxy', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              url,
               method: 'PUT',
-              headers,
-              body: JSON.stringify(payload)
-            });
-            const json = await res.json();
+              headers: {
+                'Content-Type': 'application/json',
+                'X-API-KEY': apiKey
+              },
+              body: payload
+            })
+          });
 
-            status = json?.result?.status || 'error';
-            code = json?.result?.errors?.code || '';
-            reason = json?.result?.errors?.reason || '';
+          const json = await response.json(); // ✅ Corrección aquí
 
-            log(`[${status}] gwClientId: ${row['gwClientId']}, clientId: ${row['clientId']}, reason: ${reason || '-'} `);
-          } catch (err) {
-            reason = err.message;
-            log(`[ERROR] gwClientId: ${row['gwClientId']} → ${reason}`);
-          }
+          status = json?.result?.status || 'error';
+          code = json?.result?.errors?.code || '';
+          reason = json?.result?.errors?.reason || '';
+
+          log(`[${status}] gwClientId: ${row['gwClientId']}, clientId: ${row['clientId']}, reason: ${reason || '-'}`);
+        } catch (err) {
+          reason = err.message;
+          log(`[ERROR] gwClientId: ${row['gwClientId']} → ${reason}`);
+        }
 
           output.push({
             gwClientId: row['gwClientId'],
