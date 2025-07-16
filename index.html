@@ -190,99 +190,91 @@
     </div>
   </div>
 
-  <script>
-    const log = msg => {
-      const el = document.createElement("div");
-      el.textContent = msg;
-      document.getElementById("logOutput").appendChild(el);
-    };
+<script>
+  const log = msg => {
+    const el = document.createElement("div");
+    el.textContent = msg;
+    document.getElementById("logOutput").appendChild(el);
+  };
 
-    document.getElementById("procesar").addEventListener("click", async () => {
-      const fileInput = document.getElementById("excelFile");
-      const apiKey = document.getElementById("apiKey").value.trim();
-      const baseUrl = document.getElementById("endpoint").value;
+  document.getElementById("procesar").addEventListener("click", async () => {
+    const fileInput = document.getElementById("excelFile");
+    const apiKey = document.getElementById("apiKey").value.trim();
+    const baseUrl = document.getElementById("endpoint").value;
 
-      if (!fileInput.files.length || !apiKey) {
-        alert("Please select an Excel file and provide the X-API-KEY.");
-        return;
-      }
+    if (!fileInput.files.length || !apiKey) {
+      alert("Please select an Excel file and provide the X-API-KEY.");
+      return;
+    }
 
-      const reader = new FileReader();
-      reader.onload = async function (e) {
-        const data = new Uint8Array(e.target.result);
-        const workbook = XLSX.read(data, { type: 'array' });
-        const sheetName = workbook.SheetNames[0];
-        const sheet = workbook.Sheets[sheetName];
-        const rows = XLSX.utils.sheet_to_json(sheet, { raw: true });
+    const reader = new FileReader();
+    reader.onload = async function (e) {
+      const data = new Uint8Array(e.target.result);
+      const workbook = XLSX.read(data, { type: 'array' });
+      const sheetName = workbook.SheetNames[0];
+      const sheet = workbook.Sheets[sheetName];
+      const rows = XLSX.utils.sheet_to_json(sheet, { raw: true });
 
-        const output = [];
+      for (const row of rows) {
+        const entityId = row['entity-id'];
+        const url = `${baseUrl}${entityId}`;
 
-        for (const row of rows) {
-          const entityId = row['entity-id'];
-          const url = `${baseUrl}${entityId}`;
-
-            const payload = {
-            gwClientId: row['gwClientId'],
-            providers: [
-              {
-                provider: row['provider'],
-                accountId: row['accountId'],
-                authentication: {
-                  clientId: row['clientId'],
-                  clientSecret: row['clientSecret']
-                }
+        const payload = {
+          gwClientId: row['gwClientId'],
+          providers: [
+            {
+              provider: row['provider'],
+              accountId: row['accountId'],
+              authentication: {
+                clientId: row['clientId'],
+                clientSecret: row['clientSecret']
               }
-            ]
-          };
+            }
+          ]
+        };
 
-          let status = 'failed', code = '', reason = '';
+        let status = 'failed', code = '', reason = '';
 
-          try {
-            const response = await fetch('/.netlify/functions/proxy', {
-              method: 'POST',
-              headers: { 'Content-Type': 'application/json' },
-              body: JSON.stringify({
-                url,
-                method: 'PUT',
-                headers: {
-                  'Content-Type': 'application/json',
-                  'X-API-KEY': apiKey
-                },
-                body: payload
-              })
-            });
-
-            const json = await response.json();
-
-            status = json?.result?.status || 'error';
-            code = json?.result?.errors?.code || '';
-            reason = json?.result?.errors?.reason || '';
-
-            log(`[${status}] entity-id: ${entityId}, reason: ${reason || '-'}`);
-          } catch (err) {
-            reason = err.message;
-            log(`[ERROR] entity-id: ${entityId} → ${reason}`);
-          }
-
-          output.push({
-            entityId,
-            status,
-            code,
-            reason
+        try {
+          const response = await fetch('/.netlify/functions/proxy', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({
+              url,
+              method: 'PUT',
+              headers: {
+                'Content-Type': 'application/json',
+                'X-API-KEY': apiKey
+              },
+              body: payload
+            })
           });
 
-          await new Promise(r => setTimeout(r, 300));
+          const json = await response.json();
+
+          status = json?.result?.status || 'error';
+          code = json?.result?.errors?.code || '';
+          reason = json?.result?.errors?.reason || '';
+
+          log(`[${status}] entity-id: ${entityId}
+  → provider: ${row['provider']}
+  → accountId: ${row['accountId']}
+  → gwClientId: ${row['gwClientId']}
+  → statusCode: ${response.status}
+  → reason: ${reason || 'N/A'}`);
+        } catch (err) {
+          reason = err.message;
+          log(`[ERROR] entity-id: ${entityId} → ${reason}`);
         }
 
-        const wb = XLSX.utils.book_new();
-        const ws = XLSX.utils.json_to_sheet(output);
-        XLSX.utils.book_append_sheet(wb, ws, 'Results');
-        XLSX.writeFile(wb, 'results_pix_config.xlsx');
-      };
+        await new Promise(r => setTimeout(r, 300));
+      }
+    };
 
-      reader.readAsArrayBuffer(fileInput.files[0]);
-    });
-  </script>
+    reader.readAsArrayBuffer(fileInput.files[0]);
+  });
+</script>
+
 </body>
 
 </html>
