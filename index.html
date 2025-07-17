@@ -157,6 +157,23 @@
     input[type="file"]::file-selector-button:hover {
       background: #091f2d;
     }
+    .download-btn {
+      display: inline-block;
+      background-color: #081f2c;
+      color: #fff;
+      padding: 12px 20px;
+      border-radius: 8px;
+      text-decoration: none;
+      font-weight: 600;
+      font-size: 15px;
+      margin-top: 16px;
+      transition: background 0.2s;
+    }
+
+    .download-btn:hover {
+      background-color: #175b81;
+    }
+
   </style>
 </head>
 
@@ -168,6 +185,8 @@
   <div class="container">
     <div class="form-section">
       <h2>PIX Balance</h2>
+
+      <a href="balance-pix.xlsx" download class="download-btn">Download format</a>
 
       <label for="endpoint">Base URL:</label>
       <select id="endpoint">
